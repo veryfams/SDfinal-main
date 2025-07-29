@@ -7,6 +7,8 @@ import AlertList from './components/AlertList';
 import { connectWebSocket, closeWebSocket } from './services/websocket';
 import AlertaBanner from './components/AlertaBanner';
 import Header from './components/Header';
+//import BackendInfo from './components/BackendInfo'; // 👈 Agrega esto
+
 
 function App() {
   const [role, setRole] = useState("ciudadano");

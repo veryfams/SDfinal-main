@@ -9,13 +9,15 @@ import os
 import socket
 import json
 
+# Puedes activar root_path="/api" si necesitas que todo el backend esté bajo /api
 app = FastAPI(
     title="Sistema Distribuido de Alerta de Desastres",
     description="Backend FastAPI con WebSocket, MQTT y PostgreSQL",
     version="1.0.0"
+    # root_path="/api"
 )
 
-# Base de datos
+# 📦 Base de datos
 db = Database(
     dbname=os.getenv("DB_NAME", "adn_alert_db"),
     user=os.getenv("DB_USER", "postgres"),
@@ -24,13 +26,13 @@ db = Database(
     port=int(os.getenv("DB_PORT", 5432))
 )
 
-# WebSocket manager
+# 🔌 WebSocket Manager
 ws_manager = WebSocketManager()
 
 # 🔁 MQTT Broker desde el contenedor
 mqtt = MQTTClient("mosquitto", 1883, "alertas/general", db)
 
-# Manejador al recibir alerta MQTT
+# 🔁 Callback para procesar alertas entrantes por MQTT
 def manejar_mensaje(topic, payload, timestamp):
     try:
         alerta = json.loads(payload)
@@ -40,12 +42,12 @@ def manejar_mensaje(topic, payload, timestamp):
     except Exception as e:
         print("❌ Error al procesar o enviar alerta:", e)
 
+# 🔂 Iniciar MQTT
 mqtt.set_on_message_callback(manejar_mensaje)
 mqtt.start()
 print("🚀 Cliente MQTT iniciado")
 
-
-# WebSocket endpoint
+# 🔷 WebSocket para tiempo real
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     hostname = socket.gethostname()
@@ -59,9 +61,7 @@ async def websocket_endpoint(websocket: WebSocket):
         print("❌ Cliente WebSocket desconectado.")
         await ws_manager.disconnect(websocket)
 
-
-# Endpoints REST
-
+# 📊 Filtros y ordenamientos para alertas
 class OrderOptions(str, Enum):
     asc = "asc"
     desc = "desc"
@@ -94,12 +94,13 @@ def get_alertas_por_tipo(tipo: str):
         raise HTTPException(status_code=404, detail=f"No se encontraron alertas del tipo: {tipo}")
     return alertas
 
-@app.get("/quien-soy")
+# 🧠 Diagnóstico: ver nombre del backend
+@app.get("/quien-soy", tags=["Diagnóstico"])
 def quien_soy():
-    instancia = os.getenv("BACKEND_NAME", "Desconocido")
+    instancia = os.getenv("BACKEND_NAME", socket.gethostname())
     return {"servidor": instancia}
 
-
+# ⚖️ Diagnóstico: endpoint usado en test de balanceo de carga
 @app.get("/instancia", summary="Ver instancia del backend", tags=["Diagnóstico"])
 def get_instancia_backend():
     return {"instancia": os.getenv("BACKEND_NAME", socket.gethostname())}
