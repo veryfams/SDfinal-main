@@ -1,0 +1,43 @@
+.alerta-banner {
+  animation: slideIn 0.5s ease-out;
+  padding: 16px;
+  color: white;
+  font-size: 1.2rem;
+  text-align: center;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 9999;
+}
+
+.alerta-sismo {
+  background-color: #b30000;
+}
+
+.alerta-incendio {
+  background-color: #ff6a00;
+}
+
+.alerta-inundacion {
+  background-color: #0054a6;
+}
+
+.alerta-banner .contenido {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alerta-banner .icono {
+  font-size: 2rem;
+  margin-right: 1rem;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
