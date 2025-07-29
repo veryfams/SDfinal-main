@@ -33,6 +33,11 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - BACKEND_NAME=🔥 BACKEND 1  # 👈 Aquí
+    volumes:
+      - shared_logs:/shared/logs
+    depends_on:
+      - postgres
+      - fluentd-sidecar
 
   backend2:
     build:
@@ -47,6 +52,11 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - BACKEND_NAME=🧊 BACKEND 2  # 👈 Y aquí
+    volumes:
+      - shared_logs:/shared/logs
+    depends_on:
+      - postgres
+      - fluentd-sidecar
 
 
   nginx:
@@ -57,9 +67,11 @@ services:
     volumes:
       - ./adn-alert-frontend/build:/usr/share/nginx/html
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - shared_logs:/shared/logs
     depends_on:
       - backend1
       - backend2
+      - fluentd-sidecar
 
   frontend:
     build:
@@ -74,5 +86,67 @@ services:
     stdin_open: true
     tty: true
 
+  # 📊 GRAFANA + LOKI STACK para visualización de logs
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./grafana-loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - ./grafana-loki/promtail-config.yml:/etc/promtail/config.yml
+      - shared_logs:/shared/logs:ro  # Leer logs del sidecar
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  fluentd-sidecar:
+    build:
+      context: ./sidecar-logging
+    container_name: fluentd-sidecar
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - shared_logs:/shared/logs
+    environment:
+      - FLUENTD_CONF=fluent.conf
+      - FLUENTD_LOG_LEVEL=debug
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: grafana
+    ports:
+      - "3001:3000"  # Puerto 3001 para no conflicto con frontend
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_LOGIN_MAXIMUM_INACTIVE_LIFETIME_DAYS=1
+      - GF_AUTH_LOGIN_MAXIMUM_LIFETIME_DAYS=1
+      - GF_SECURITY_LOGIN_MAXIMUM_INACTIVE_LIFETIME_DURATION=24h
+      - GF_SECURITY_LOGIN_MAXIMUM_LIFETIME_DURATION=24h
+      - GF_SECURITY_LOGIN_REMEMBER_DAYS=1
+      - GF_SECURITY_DISABLE_BRUTE_FORCE_LOGIN_PROTECTION=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-loki/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana-loki/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - loki
+
 volumes:
   postgres_data:
+  shared_logs:     # Logs compartidos del sidecar
+  loki_data:       # Datos de Loki
+  grafana_data:    # Datos de Grafana

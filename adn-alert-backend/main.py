@@ -27,8 +27,8 @@ db = Database(
 # WebSocket manager
 ws_manager = WebSocketManager()
 
-# 🔁 MQTT Broker desde el host (no entre contenedores)
-mqtt = MQTTClient("host.docker.internal", 1883, "alertas/general", db)
+# 🔁 MQTT Broker desde el contenedor
+mqtt = MQTTClient("mosquitto", 1883, "alertas/general", db)
 
 # Manejador al recibir alerta MQTT
 def manejar_mensaje(topic, payload, timestamp):

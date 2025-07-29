@@ -1,0 +1,142 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "🚨 ADN Alert System - Logs Dashboard",
+    "description": "Dashboard para monitoreo de logs del Sistema de Alerta de Desastres",
+    "tags": ["adn-alert", "logs", "sistema-distribuido"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "📊 Volume de Logs por Servicio",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count by (service_name) (rate({job=\"adn-alert-logs\"}[5m]))",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 2,
+        "title": "🔥 Logs en Tiempo Real - Backends",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{service_name=\"adn-alert-backend\"}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 12, "w": 24, "x": 0, "y": 8},
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "showCommonLabels": false,
+          "wrapLogMessage": false,
+          "prettifyLogMessage": false,
+          "enableLogDetails": true,
+          "dedupStrategy": "none",
+          "sortOrder": "Descending"
+        }
+      },
+      {
+        "id": 3,
+        "title": "🚨 Alertas MQTT Recibidas",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{service_name=\"adn-alert-backend\"} |~ \"📥.*MQTT|📤.*WebSocket\"",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 20},
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "wrapLogMessage": true,
+          "enableLogDetails": true
+        }
+      },
+      {
+        "id": 4,
+        "title": "⚡ Conexiones WebSocket",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{service_name=\"adn-alert-backend\"} |~ \"WebSocket.*conectado|WebSocket.*desconectado\"",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 20},
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "wrapLogMessage": true,
+          "enableLogDetails": true
+        }
+      },
+      {
+        "id": 5,
+        "title": "❌ Errores del Sistema",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{job=\"adn-alert-logs\"} |~ \"❌|ERROR|Error|error\"",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 30},
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "wrapLogMessage": true,
+          "enableLogDetails": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "📈 Rate de Logs por Minuto",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate({job=\"adn-alert-logs\"}[1m])",
+            "refId": "A",
+            "legendFormat": "{{service_name}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "xAxis": {
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Logs/min",
+            "show": true
+          }
+        ],
+        "legend": {
+          "show": true
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "10s",
+    "schemaVersion": 30,
+    "version": 1
+  }
+}
